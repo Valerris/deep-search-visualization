@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Deep Search</title>
+        <link rel="stylesheet" type="text/css" href="Style/reset.css">
+        <link rel="stylesheet" type="text/css" href="Style/mainStyle.css">
+		<script type="text/javascript" src="dracula-js-fork-master/raphael-min.js"></script>
+    	<script type="text/javascript" src="dracula-js-fork-master/dracula_graffle.js"></script>
+    	<script type="text/javascript" src="dracula-js-fork-master/dracula_graph.js"></script>
+    </head>
+<body>
+    
+    <main>
+        <h1>Deep Search</h1>
+        <form name="widthSearchForm" action="" method="">
+        	
+            <input id="aim" name="aim" type="text" required>            
+            <div class="button-wrapper">
+				<button id="show" type="button">Show Graph</button>
+				<button id="submit" type="submit">Push me</button>
+            </div> 			
+        </form>
+		
+    </main>
+	
+	<div id="output"></div>
+    
+	<script>
+		$('#width').submit(function(e){
+            e.preventDefault();			
+            let formData = $(this).serializeArray();            
+            $.post('php/WidthSearch.php', formData, function(data){
+                var result = JSON.parse(data);
+				var text = `Путь до вершины ${req}:\n`;
+		  	text += `${req}`;
+		  	for(var i = 0; i < result.length: i++){
+				text += ` <- ${req}`;
+			}			  			
+			document.getElementById('output').innerHTML = text;
+            });
+        });
+		
+		document.getElementById('submit').onclick = function(e){
+			
+			e.preventDefault();
+			
+			var req = document.forms.widthSearchForm.elements.aim.value;
+			
+			if(req < 0 || req > 6){
+				document.getElementById('output').innerHTML = 'Ошибка! Неверный индекс вершины.';
+				return;
+			}
+			
+			function Edge(beg, end){
+				this.begin = beg;
+				this.end = end;
+			}
+			
+			var stack = new Array(),
+				edges = new Array(),
+				mas = [ [ 0, 1, 1, 0, 0, 0, 1 ], // матрица смежности
+						[ 1, 0, 1, 1, 0, 0, 0 ],
+						[ 1, 1, 0, 0, 0, 0, 0 ],
+						[ 0, 1, 0, 0, 1, 0, 0 ],
+						[ 0, 0, 0, 1, 0, 1, 0 ],
+						[ 0, 0, 0, 0, 1, 0, 1 ],
+						[ 1, 0, 0, 0, 0, 1, 0 ]  ],
+				nodes = [0, 0, 0, 0, 0, 0, 0];
+			
+			stack.push(0);
+	
+			while(stack.length !== 0 ){
+				var node = stack.pop();
+				
+				if (nodes[node] == 2) continue;
+				nodes[node] = 2; 
+				for (var i = 6; i >= 0; i--)
+				{ 
+				  if (mas[node][i] == 1 && nodes[i] != 2)
+				  { 
+					stack.push(i); 
+					nodes[i] = 1;
+					var E = new Edge(node, i);
+					edges.push(E);
+					if (node == req) break;
+				  }
+				}
+			}
+			
+			var text = `Путь до вершины ${req}:\n`;
+		  	text += `${req}`;
+		  	while (edges.length !== 0) {
+				E = edges.pop();
+
+				if (E.end == req) {
+				  req = E.begin;
+				  text += ` <- ${req}`;
+				}
+			}
+			
+			document.getElementById('output').innerHTML = text;			
+		}					
+		
+		var createdCross = null,
+            createdContainer = null;
+		
+		document.getElementById('show').onclick = function(){
+			var container = document.createElement('svg');
+            container.id = 'graphDiv';
+            container.classList.add('show-area');
+            document.body.appendChild(container);
+            createdContainer = container;
+            
+            var cross = document.createElement('div');
+            cross.id = 'cross';
+            cross.classList.add('cross');
+            document.body.appendChild(cross);
+            createdCross = cross;
+            
+            var g = new Graph();
+            
+            var render = function(r, n) {
+            var set = r.set().push(
+                r.rect(n.point[0]-30, n.point[1]-13, 60, 44).attr({"fill": "#feb", r : "12px", "stroke-width" : n.distance == 0 ? "5px" : "3px" })).push(
+                r.text(n.point[0], n.point[1] + 10, (n.label || n.id)))
+                    .attr({"font-size": "25px"});
+            return set;
+            };
+            
+			for(var i = 0; i < 7; i++){
+				g.addNode(`${i}`, {
+					label : `${i}` ,
+					render : render
+				});
+			}			
+			
+            g.addEdge('0', '1'); g.addEdge('0', '2'); g.addEdge('0', '6');
+			g.addEdge('1', '2'); g.addEdge('1', '3'); 
+			g.addEdge('3', '4');
+			g.addEdge('4', '5');
+            g.addEdge('5', '6');
+			
+            var layouter = new Graph.Layout.Spring(g);
+            layouter.layout();
+
+            var renderer = new Graph.Renderer.Raphael('graphDiv', g, 1200, 400);
+            renderer.draw();
+			
+			document.getElementById('cross').onclick = function(){
+				document.body.removeChild(createdContainer);
+				document.body.removeChild(createdCross);
+				createdContainer = createdCross = null;
+			}
+		}
+		
+		</script>
+	
+</body>
+</html>
